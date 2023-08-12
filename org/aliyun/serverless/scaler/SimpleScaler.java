@@ -86,15 +86,18 @@ public class SimpleScaler implements Scaler {
             SlotResourceConfig slotResourceConfig = new SlotResourceConfig(resourceConfig);
 
             if (!idleSlots.isEmpty()) {
-                Slot slot = idleSlots.pollFirst();
+                //Slot slot = idleSlots.pollFirst();
+                ListenableFuture<Slot> slotFuture = platformClient.CreateSlot(ctx, request.getRequestId(), slotResourceConfig);
+                Slot slot = slotFuture.get();   //创建一个slot，此时还只有与request有关的资源信息
             } else {
                 ListenableFuture<Slot> slotFuture = platformClient.CreateSlot(ctx, request.getRequestId(), slotResourceConfig);
                 Slot slot = slotFuture.get();   //创建一个slot，此时还只有与request有关的资源信息
             }
 
-            /**
-             * 可否在此之前修改，提前新建好slot，此处只需要取就行
-             */
+            ListenableFuture<Slot> slotFuture = platformClient.CreateSlot(ctx, request.getRequestId(), slotResourceConfig);
+            Slot slot = slotFuture.get();   //创建一个slot，此时还只有与request有关的资源信息
+
+            //可否在此之前修改，提前新建好slot，此处只需要取就行
 
             SchedulerProto.Meta meta = SchedulerProto.Meta.newBuilder()
                     .setKey(request.getMetaData().getKey())
@@ -219,7 +222,8 @@ public class SimpleScaler implements Scaler {
                 future.get();
             } else {
                 //还需要消除slot在实例初始化时的一些元数据
-                idleSlots.offerFirst(instance.getSlot());
+                Slot slot = instance.getSlot();
+                idleSlots.offerFirst(slot);
             }
 
         } catch (Exception e) {
