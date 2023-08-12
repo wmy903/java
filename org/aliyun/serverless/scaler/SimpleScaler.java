@@ -86,16 +86,16 @@ public class SimpleScaler implements Scaler {
             SlotResourceConfig slotResourceConfig = new SlotResourceConfig(resourceConfig);
 
             if (!idleSlots.isEmpty()) {
-                //Slot slot = idleSlots.pollFirst();
-                ListenableFuture<Slot> slotFuture = platformClient.CreateSlot(ctx, request.getRequestId(), slotResourceConfig);
-                Slot slot = slotFuture.get();   //创建一个slot，此时还只有与request有关的资源信息
+                Slot slot = idleSlots.pollFirst();
             } else {
                 ListenableFuture<Slot> slotFuture = platformClient.CreateSlot(ctx, request.getRequestId(), slotResourceConfig);
                 Slot slot = slotFuture.get();   //创建一个slot，此时还只有与request有关的资源信息
             }
 
-            ListenableFuture<Slot> slotFuture = platformClient.CreateSlot(ctx, request.getRequestId(), slotResourceConfig);
-            Slot slot = slotFuture.get();   //创建一个slot，此时还只有与request有关的资源信息
+            if (slot == null) {
+                ListenableFuture<Slot> slotFuture = platformClient.CreateSlot(ctx, request.getRequestId(), slotResourceConfig);
+                Slot slot = slotFuture.get();   //创建一个slot，此时还只有与request有关的资源信息
+            }
 
             //可否在此之前修改，提前新建好slot，此处只需要取就行
 
@@ -221,10 +221,10 @@ public class SimpleScaler implements Scaler {
                 ListenableFuture<Empty> future = platformClient.DestroySLot(context, requestId, slotID, reason);
                 future.get();
             } else {
-                //还需要消除slot在实例初始化时的一些元数据
                 Slot slot = instance.getSlot();
                 idleSlots.offerFirst(slot);
             }
+
 
         } catch (Exception e) {
             logger.info(String.format("delete Instance %s (Slot: %s) of app: %s failed with: %s",
