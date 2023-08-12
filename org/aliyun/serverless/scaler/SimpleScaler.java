@@ -85,16 +85,12 @@ public class SimpleScaler implements Scaler {
                     .setMemoryInMegabytes(request.getMetaData().getMemoryInMb()).build();    //按照request的资源需求分配资源
             SlotResourceConfig slotResourceConfig = new SlotResourceConfig(resourceConfig);
 
+            Slot slot = null;  // 在if内部定义的slot，不能在外部使用，所以需要先在外部定义
             if (!idleSlots.isEmpty()) {
-                Slot slot = idleSlots.pollFirst();
+                slot = idleSlots.pollFirst();
             } else {
                 ListenableFuture<Slot> slotFuture = platformClient.CreateSlot(ctx, request.getRequestId(), slotResourceConfig);
-                Slot slot = slotFuture.get();   //创建一个slot，此时还只有与request有关的资源信息
-            }
-
-            if (slot == null) {
-                ListenableFuture<Slot> slotFuture = platformClient.CreateSlot(ctx, request.getRequestId(), slotResourceConfig);
-                Slot slot = slotFuture.get();   //创建一个slot，此时还只有与request有关的资源信息
+                slot = slotFuture.get();   //创建一个slot，此时还只有与request有关的资源信息
             }
 
             //可否在此之前修改，提前新建好slot，此处只需要取就行
